@@ -1,13 +1,41 @@
 [
   {
     "name": "week",
-    "title": "This week",
-    "subtitle": "Business Metrics for Claude Code: what needs attention, rendered by npm run view",
+    "title": "Monthly performance desk",
+    "subtitle": "Read-only working report. Check source scope before decisions.",
     "sections": [
       {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
+        "title": "Latest results",
+        "sql": "SELECT code,period,segment,unit,actual,target,variance,status FROM v_latest ORDER BY code,segment"
+      },
+      {
+        "title": "Attention",
+        "sql": "SELECT * FROM v_attention ORDER BY code,reason"
+      }
+    ]
+  },
+  {
+    "name": "trends",
+    "title": "Metric trends",
+    "sections": [
+      {
+        "title": "Period comparisons",
+        "note": "Previous means previous observed period, not necessarily the previous calendar month. Units stay separate.",
+        "sql": "SELECT code,segment,period,unit,actual,previous_period,previous_actual,change FROM v_trends ORDER BY code,segment,period"
+      }
+    ]
+  },
+  {
+    "name": "governance",
+    "title": "Definitions and evidence",
+    "sections": [
+      {
+        "title": "Metric definitions",
+        "sql": "SELECT code,name,definition,owner,review_on FROM metrics ORDER BY code"
+      },
+      {
+        "title": "Review findings",
+        "sql": "SELECT * FROM v_compliance ORDER BY code,rule"
       }
     ]
   }

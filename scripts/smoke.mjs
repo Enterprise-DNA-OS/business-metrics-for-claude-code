@@ -1,0 +1,84 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {getDb,REPO_ROOT} from './lib/db.mjs';
+import {migrate} from './migrate.mjs';
+import {seed} from './seed.mjs';
+import {run,help} from './metrics.mjs';
+import {parseCsv} from './lib/csv.mjs';
+
+const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'metrics-smoke-'));
+process.env.DATA_DIR=path.join(tmp,'db');process.env.OUTPUT_DIR=tmp;process.env.DRAFT_DIR=path.join(tmp,'drafts');
+// Never use an ambient production connection. CI supplies an empty test database explicitly.
+process.env.DATABASE_URL=process.env.TEST_DATABASE_URL||'';
+const db=await getDb();let checks=0;const exercised=new Set();
+const check=(v,msg)=>{assert.ok(v,msg);checks++;};
+const call=async args=>{exercised.add(args[0]);return run(db,[...args,'--json']);};
+const fails=async(args,re)=>{await assert.rejects(()=>call(args),re);checks++;};
+const count=async t=>Number((await db.query('SELECT count(*) n FROM '+t))[0].n);
+try{
+ check((await db.query("SELECT count(*) n FROM information_schema.tables WHERE table_schema='public'")).every(r=>Number(r.n)===0),'Use an empty disposable test database');
+ await migrate(db);check((await migrate(db)).ran.length===0);await seed(db);const initial=await count('observations');await seed(db);check(await count('observations')===initial);
+ check((await call(['help'])).length===Object.keys(help).length);
+ check((await call(['metrics'])).length===5);
+ const score=await call(['scorecard']);
+ check(Math.abs(Number(score.find(r=>r.code==='ONTIME').actual)-89.0909)<0.0001,'Weighted ratio, not average of percentages');
+ check(score.find(r=>r.code==='BACKLOG').actual===null,'Missing data stays null');
+ check(score.find(r=>r.code==='RETURNS').status==='off target','Lower is better');
+ check((await call(['attention'])).some(r=>r.reason==='stale period'));
+ check((await call(['variance'])).length===3);
+ check((await call(['missing-targets'])).some(r=>r.code==='OVERTIME'));
+ check((await call(['sources']))[0].rows>0);
+ check((await call(['actions'])).length===2);
+ check((await call(['compliance'])).some(r=>r.rule==='NZ-IPP9'));
+ check((await call(['trend','sales'])).some(r=>Number(r.change)===-15000));
+ check((await call(['metric','net sales'])).metric.code==='SALES');
+ check((await call(['metric','10000000-0000-4000-8000-000000000001'])).metric.code==='SALES');
+ await fails(['metric','10000000'],/Ambiguous/);await fails(['metric',"' OR 1=1 --"],/not found/);
+ const add=['add','--code=TEST','--name=Net sales','--unit=NZD','--kind=sum','--direction=higher','--owner=Pat','--definition=Test <script>alert(1)</script> & details','--actor=Pat'];
+ const test=await call(add);check(test.code==='TEST');await fails(['metric','Net sales'],/Ambiguous/);
+ await fails([...add.filter(a=>!a.startsWith('--code=')),'--code=BAD','--personal=maybe'],/true or false/);
+ await call(['log','TEST','--period=2026-10-01','--segment=North','--value=0','--key=zero','--evidence=Zero verified','--actor=Pat']);
+ await fails(['log','TEST','--period=2026-10-01','--segment=North','--value=10','--key=zero','--evidence=duplicate','--actor=Pat'],/unique/);
+ await fails(['log','TEST','--period=2026-02-30','--segment=North','--value=1','--key=bad','--evidence=Bad','--actor=Pat'],/valid ISO/);
+ await fails(['log','TEST','--period=2026-10-02','--segment=North','--value=1','--key=bad','--evidence=Bad','--actor=Pat'],/first day/);
+ await fails(['log','TEST','--period=2026-10-01','--segment=North','--value=NaN','--key=bad','--evidence=Bad','--actor=Pat'],/finite decimal/);
+ await fails(['log','TEST','--period=2026-10-01','--segment=North','--value=1.12345','--key=bad','--evidence=Bad','--actor=Pat'],/four places/);
+ await fails(['log','ONTIME','--period=2026-10-01','--segment=North','--value=1','--key=bad','--evidence=Bad','--actor=Pat'],/positive denominator/);
+ await fails(['log','ONTIME','--period=2026-10-01','--segment=North','--value=1','--denominator=0','--key=bad','--evidence=Bad','--actor=Pat'],/check constraint/);
+ const target=['target','TEST','--period=2026-10-01','--segment=North','--value=0','--note=Zero goal','--actor=Pat'];
+ await call(target);let z=(await call(['scorecard'])).find(r=>r.code==='TEST');check(Number(z.actual)===0&&z.status==='on target');
+ await call([...target.filter(a=>!a.startsWith('--value=')),'--value=100']);check((await call(['history','TEST'])).some(r=>r.detail.before&&Number(r.detail.before.value)===0));
+ await call(['review','OVERTIME','--expected=1','--next-review=2099-01-01','--purpose=Workload review','--note=Checked source','--actor=Pat']);
+ check(!(await call(['compliance'])).some(r=>r.code==='OVERTIME'));
+ await fails(['review','OVERTIME','--expected=1','--next-review=2099-01-01','--note=Stale','--actor=Pat'],/version changed/);
+ await fails(['review','OVERTIME','--expected=2','--next-review=2020-01-01','--note=Past','--actor=Pat'],/future/);
+ await call(['action','TEST','--code=ACT-103','--title=Check import scope','--owner=Pat','--due=2099-01-01','--actor=Pat']);
+ await call(['close-action','act-103','--resolution=Source reconciled','--actor=Pat']);
+ await fails(['close-action','ACT-103','--resolution=Again','--actor=Pat'],/already closed/);
+ const imp=['import','tableau','--metric=TEST','--file='+path.join(REPO_ROOT,'fixtures/tableau.csv'),'--source=site/workbook/sheet','--scope=All regions, September 2026; no totals','--date-column=Month','--segment-column=Region','--value-column=Sales','--key-column=Order ID','--actor=Pat'];
+ const before=await count('observations');check((await call([...imp,'--dry-run'])).imported===2);check(await count('observations')===before);check(await count('imports')===0);
+ check((await call(imp)).imported===2);check((await call(imp)).duplicate===true);check(await count('observations')===before+2);
+ const changed=path.join(tmp,'changed.csv');fs.writeFileSync(changed,'Month,Region,Sales,Order ID,Department\n2026-09-01,New,30,503,Retail\n2026-09-01,West,999,502,Retail\n');
+ await fails([...imp.filter(a=>!a.startsWith('--file=')),'--file='+changed],/changed data/);check(await count('observations')===before+2);check(await count('imports')===1,'failed import fully rolled back');
+ fs.writeFileSync(changed,'Month,Region,Sales,Order ID,Department\n2026-09-01,New,30,503,Retail\n2026-09-01,New,20,503,Retail\n');
+ await fails([...imp.filter(a=>!a.startsWith('--file=')),'--file='+changed],/Duplicate/);check(await count('observations')===before+2);
+ fs.writeFileSync(changed,'Month,Region,Sales,Order ID,Department\n2026-09-01,West,800,502,Retail\n');
+ check((await call([...imp.filter(a=>!a.startsWith('--file=')),'--file='+changed])).unchanged===1);check(await count('observations')===before+2);
+ await fails([...imp.filter(a=>!a.startsWith('--value-column=')),'--value-column=Missing'],/column missing/);
+ await fails([...imp.filter(a=>!a.startsWith('--metric=')),'--metric=ONTIME'],/denominator-column/);
+ const snap=path.join(tmp,'snapshot.json');await call(['export','--out='+snap]);const out=JSON.parse(fs.readFileSync(snap));check(out.observations.length===await count('observations'));check(out.imports[0].csv_text.includes('Department'));check(out.events.length>0);
+ await fails(['export','--out='+snap],/exist/);
+ for(const args of [['weekly-review'],['draft-variance','TEST']]){const x=await call(args);check(x.sent===false&&fs.readFileSync(x.draft,'utf8').includes('Nothing sent'));}
+ await fails(['metrics','--typo=1'],/Unknown flag/);await fails(['metrics','extra'],/Too many/);
+ for(const t of ['observations','imports','events']){await assert.rejects(()=>db.query('UPDATE '+t+' SET updated_at=now()'),/Append-only/);checks++;}
+ assert.throws(()=>parseCsv('A,A\n1,2'),/unique/);assert.throws(()=>parseCsv('A,B\n"broken,2'),/unclosed/);check(parseCsv('\ufeffA,B\r\n"one\nline","a""b"\r\n')[0].B==='a"b');
+ check(Object.keys(help).every(k=>exercised.has(k)),'Every CLI command exercised');
+ await db.close();
+ for(const script of ['view','docs']){const p=spawnSync(process.execPath,['scripts/'+script+'.mjs'],{cwd:REPO_ROOT,env:process.env,encoding:'utf8'});assert.equal(p.status,0,p.stderr);checks++;}
+ const html=fs.readFileSync(path.join(tmp,'views/governance.html'),'utf8');check(html.includes('&lt;script&gt;')&&!html.includes('<script>'));
+ const cli=spawnSync(process.execPath,['scripts/metrics.mjs','metric','Net sales','--json'],{cwd:REPO_ROOT,env:process.env,encoding:'utf8'});check(cli.status===1&&JSON.parse(cli.stderr).candidates.length===2);
+ console.log(`PASS: ${checks} assertions; ${exercised.size} CLI commands; weighted ratios, nulls, source reconciliation, atomic imports, audit history, drafts and escaped HTML.`);
+}catch(e){await db.close().catch(()=>{});throw e;}finally{fs.rmSync(tmp,{recursive:true,force:true});}

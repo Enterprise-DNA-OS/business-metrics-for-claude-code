@@ -1,115 +1,115 @@
-<h1 align="center">Business Metrics for Claude Code</h1>
+# Business Metrics for Claude Code
 
-<p align="center">
-  <strong>The open-source business metrics desk that is just a database and Claude Code.</strong>
-</p>
+Own the definitions, numbers and decisions behind your monthly reporting. Compare results with targets, find stale figures and keep the follow-up evidence in your database.
 
-<p align="center">
-  Created by <a href="https://www.enterprisedna.co"><strong>Enterprise DNA</strong></a>. Free and open source. Works with Claude Code, Codex, OpenCode or Cursor.
-</p>
+## Three ways to own it
 
-<!-- three-doors -->
-<table align="center">
-  <tr>
-    <td align="center"><strong>Do it yourself</strong><br/>Clone it, run it, own it. Free, MIT.<br/><a href="#quick-start">Quick start</a></td>
-    <td align="center"><strong>We customise it</strong><br/>Your fields, your rules, your Tableau data brought across.<br/><a href="https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=tableau">Book a call</a></td>
-    <td align="center"><strong>We run it for you</strong><br/>Installed, connected and operated inside Omni. Setup fee, then a retainer.<br/><a href="https://enterprisedna.co/omni/instead-of/tableau?utm_source=github&utm_medium=readme&utm_campaign=tableau">How it works</a></td>
-  </tr>
-</table>
+- **Do it yourself:** MIT-licensed base for Claude Code, Codex, OpenCode or Cursor. Hosting and agent subscriptions are separate.
+- **We customise it:** Enterprise DNA maps your Tableau exports, builds your definitions and rules, connects sources and adds a web front end or a different stack when needed. One setup fee, then a retainer.
+- **We run it for you:** Omni by Enterprise DNA installs the system, manages access and backups, and keeps the reporting workflow running. One setup fee, then a retainer.
 
-<p align="center">
-  <a href="#what-is-this">What is this</a> &bull;
-  <a href="#why-no-front-end">Why no front end</a> &bull;
-  <a href="#quick-start">Quick start</a> &bull;
-  <a href="#the-commands">Commands</a> &bull;
-  <a href="#instead-of-tableau">Instead of Tableau</a> &bull;
-  <a href="#want-it-installed-and-run-for-you">Installed for you</a> &bull;
-  <a href="#license">License</a>
-</p>
+[Book a 30-minute call with Sam](https://enterprisedna.co/omni/book/?offer=replace-software&utm_source=github&utm_medium=readme&utm_campaign=tableau).
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Node-20+-339933?style=flat-square" alt="Node 20+" />
-  <img src="https://img.shields.io/badge/PostgreSQL-any-336791?style=flat-square" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/PGlite-embedded-3ecf8e?style=flat-square" alt="PGlite" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License" />
-</p>
+## Try the synthetic demo
 
----
+Node 20 or newer. No cloud service required.
 
-## What is this
-
-Business Metrics for Claude Code does the job you pay Tableau for, as a Postgres database and a set of agent commands. There is no web front end. You open the folder in [Claude Code](https://claude.com/claude-code) (or Codex, OpenCode, Cursor: see `AGENTS.md`) and ask for what you want in plain language. It runs the right query, and it can answer questions the Tableau dashboard cannot.
-
-<!-- TODO(author): the annual bill. One sentence: what a 10 to 50 person business typically pays Tableau per year, all in, with a source. -->
-
-Want the same thing with a web front end, or built on a different stack? That is a customisation, and it is exactly what Enterprise DNA does: [book a call](https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=tableau).
-
-<!-- TODO(author): two or three sentences on what this specific product covers and who it is for. -->
-
-## Why no front end
-
-- The front end was only ever there because the database was hard to talk to. That is no longer true.
-- Your data sits in plain Postgres tables you own. Any tool can read them. No export, no lock-in.
-- No seats, no tiers, no add-ons. Read [docs/why-no-front-end.md](docs/why-no-front-end.md) for the honest trade-offs too.
-
-## Quick start
-
-Sixty seconds, no database install (an embedded Postgres runs inside Node):
-
-```bash
-git clone https://github.com/Enterprise-DNA-OS/business-metrics-for-claude-code.git
-cd business-metrics-for-claude-code
+```sh
 npm install
+npm test
 npm run demo
+npm run metrics -- scorecard
+npm run metrics -- attention
+npm run metrics -- trend SALES
+npm run view
+npm run docs
 ```
 
-Then open the folder in Claude Code and type a slash command. <!-- TODO(author): name the first command to try. -->
+Harbour Supply and its records are invented. The seed includes two sales regions, weighted dispatch counts, excessive returns, an overdue action, stale overtime figures and a target with no actual result. Periods are relative to the run date. Repeated seeding preserves existing rows. Never seed real records. Start a fresh DATA_DIR for real work. DATABASE_URL selects PostgreSQL; otherwise PGlite persists in .data/db.
 
-### Use it with your own Postgres or Supabase
+## What it does
 
-Copy `.env.example` to `.env`, set `DATABASE_URL`, then `npm run migrate`. Same commands, shared data, no per-seat fee.
+Definitions hold the unit, calculation, direction, owner and review date. Observations preserve source keys and evidence. Targets hold an agreed value for each period and segment. Changes to targets and reviews keep before-and-after history. Actions name the owner, deadline and resolution. Monthly reports distinguish absent results from zero and show the previous observed period explicitly.
 
-## The commands
+A sum adds the supplied values within one metric, month and segment. A ratio divides summed numerators by summed positive denominators and multiplies by 100. For example, 8 of 10 and 90 of 100 produce 89.0909 percent, not 85 percent. Zero denominators are rejected. Counts, currencies, hours and percentages never share a grand total. Snapshot balances and distinct counts require careful source grain and must not be loaded as overlapping additive rows.
 
-<!-- TODO(author): a table of the slash commands in .claude/commands and what each one does. -->
+Observations and import evidence are append-only. Corrections need a reviewed migration that preserves history. This base handles a monthly metric review; it is not a Tableau workbook engine, live connector service, interactive chart editor or staff access platform. [Why no front end](docs/why-no-front-end.md) explains that scope.
 
-| Command | What it does |
+## Recurring jobs
+
+| Command | Purpose |
 |---|---|
-| `/...` | ... |
+| /help | List commands. Flags use --name=value. All commands accept --json. |
+| /metrics | Metric definitions, units, owners and review dates. |
+| /scorecard | Latest monthly actual and target by metric and segment. |
+| /attention | Off-target, stale, missing and overdue work. |
+| /trend | trend <metric>: ordered monthly results, previous period and change. |
+| /variance | Off-target latest results, with actual, target and variance. |
+| /sources | Source coverage, import scope and source row counts. |
+| /missing-targets | Latest results without an agreed target. |
+| /actions | All review actions with due date and status. |
+| /compliance | Evidence and personal-information review checks. |
+| /metric | metric <code or name or id-prefix>: definition, observations, targets and actions. |
+| /add | add --code= --name= --unit= --kind=sum or ratio --direction=higher or lower --owner= --definition= --actor= [--personal=true --purpose= --review-on=YYYY-MM-DD] |
+| /log | log <metric> --period=YYYY-MM-01 --segment= --value= --key= --evidence= --actor= [--denominator=] |
+| /target | target <metric> --period=YYYY-MM-01 --segment= --value= --note= --actor=: set a target, preserving its old value in history. |
+| /review | review <metric> --expected=N --next-review=YYYY-MM-DD --note= --actor= [--purpose= --owner= --definition=] |
+| /action | action <metric> --code= --title= --owner= --due=YYYY-MM-DD --actor= |
+| /close-action | close-action <code or title or id-prefix> --resolution= --actor= |
+| /import | import tableau --metric= --file= --source= --scope= --date-column= --segment-column= --value-column= --actor= [--key-column= --denominator-column= --dry-run] |
+| /export | export --out=new.json: full private snapshot, including original import data. |
+| /history | history <metric>: recorded changes and decisions. |
+| /weekly-review | Draft a review from attention, variance and actions. |
+| /draft-variance | draft-variance <metric>: draft an evidence request from actuals and actions. |
+| /customise | Add fields or rules through a tested migration. |
+| /new-view | Add a branded read-only report. |
 
-## Instead of Tableau
+22 CLI commands and 24 slash commands. Every CLI accepts --json. Flags use --name=value. Metric selectors accept exact codes, case-insensitive names and UUID prefixes. Ambiguous names print candidates and exit 1. Source facts are never inferred from names.
 
-<!-- TODO(author): how to bring data across from Tableau; link docs/replace-tableau.md -->
+## Ten questions your records answer
 
-## Architecture
+1. Which regions missed their sales target, and by how much? (`npm run metrics -- variance`)
+2. Are our dispatch percentages weighted by the number of orders? (`npm run metrics -- scorecard`)
+3. Which reported numbers are stale? (`npm run metrics -- attention`)
+4. Which metrics have a target but no actual result? (`npm run metrics -- scorecard`)
+5. Which actual results have no agreed target? (`npm run metrics -- missing-targets`)
+6. Which segment changed most between its observed periods? (`npm run metrics -- trend SALES`)
+7. Which source and filter scope produced each metric? (`npm run metrics -- sources`)
+8. Which follow-up actions are overdue and who owns them? (`npm run metrics -- actions`)
+9. Which personal-information metrics need a purpose or accuracy review? (`npm run metrics -- compliance`)
+10. Who changed the target, and what was the previous value? (`npm run metrics -- history SALES`)
 
-```
-business-metrics-for-claude-code/
-  CLAUDE.md                 how the operator wants this run (routing table + house rules)
-  AGENTS.md                 the same, for Codex / OpenCode / Cursor / Gemini CLI
-  .claude/commands/         the slash commands
-  scripts/                  the CLI the commands drive
-  scripts/lib/db.mjs        one adapter: DATABASE_URL (pg) or embedded PGlite
-  supabase/migrations/      plain SQL schema
-  supabase/seed.sql         demo data
-  docs/                     the thesis and the migration guide
-```
+These are working queries against the supplied records, not claims that Tableau cannot answer them. A fresh demo has no target-change history until you record one.
 
-## Built for coding agents
+## Your first hour: ten things to ask for
 
-The database, CLI and command recipes work with Claude Code, Codex, OpenCode or Cursor. Ask your coding agent for a new command and have it implement and test the change against the same records.
+1. Put our name, logo and colours in brand.json.
+2. Explain the scorecard and its units.
+3. Show the missing and stale results.
+4. Compare each sales region with its target.
+5. Show how dispatch percentages were weighted.
+6. Draft the weekly performance review.
+7. Check a Tableau CSV and record its filter scope.
+8. Assign an owner and date to a reporting action.
+9. Add our division field through a tested migration.
+10. Export a private snapshot and check its source evidence.
 
-## Contributing
+## Switch from Tableau
 
-Issues and pull requests are welcome. Keep the shape: plain SQL, a small CLI, a slash command per recurring job, no front end.
+[The replace guide](docs/replace-tableau.md) gives the vendor export route and mapping. One command imports one mapped metric from a flat UTF-8 CSV, atomically. Identical batches do nothing; unchanged source rows are skipped; changed rows stop the whole batch. Extra columns and original CSV remain in the database, so remove unnecessary personal data before import. The fixture is synthetic, not a tested customer export.
 
-## Want it installed and run for you?
+Workbooks, permissions, formulas, schedules and connections need separate migration work. Reconcile every period and segment before retiring the incumbent.
 
-Enterprise DNA installs Business Metrics for Claude Code for your business, migrates your Tableau data, connects it to the rest of your tools, and runs it for you as part of **Omni**, our managed Command Center. One setup fee, then a monthly retainer.
+## Views, paperwork and data protection
 
-- Book a call: [enterprisedna.co/omni/book](https://enterprisedna.co/omni/book/?offer=replace-software&utm_source=github&utm_medium=readme&utm_campaign=tableau)
-- Read more: [enterprisedna.co/omni/instead-of/tableau](https://enterprisedna.co/omni/instead-of/tableau?utm_source=github&utm_medium=readme&utm_campaign=tableau)
+brand.json controls the business name, logo and colours. npm run view writes a monthly desk, trends and governance report. npm run docs creates metric review working papers and action briefs. These are static, escaped HTML documents for local reading or printing. Nothing sends or publishes.
 
-## License
+Export with `npm run metrics -- export --out=exports/metrics.json`. The snapshot includes definitions, observations, targets, actions, events and original import CSV. Existing files are never overwritten. Keep native database backups too. Full restore is a reviewed maintenance operation. Protect drafts, reports and exports as carefully as the database.
 
-MIT. Copyright (c) 2026 Enterprise DNA.
+All domain tables enable row-level security and remove PUBLIC grants. Use a trusted owner connection. This is not a multi-tenant permission service. Actor labels are supplied by the operator, not authenticated users. Review rules check stored evidence, not legal compliance. [Compliance sources and limits](docs/compliance.md).
+
+## Validation and research
+
+npm test uses a disposable database and exercises every CLI command, weighted ratios, missing data, duplicates, rollback, audit history, private exports, draft-only outputs and escaped HTML. CI covers Windows and Ubuntu on Node 20 and 22, plus PostgreSQL 16. TEST_DATABASE_URL must point to an empty disposable database. Check CI results before claiming platform verification.
+
+[Research](docs/research.md) records candidate scores, vendor pricing, export evidence and the limits of the annual-bill scenario. [Captured demo runs](docs/demo-runs.json) show actual command output.

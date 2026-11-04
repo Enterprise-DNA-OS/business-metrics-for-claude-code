@@ -1,0 +1,42 @@
+[
+  {
+    "ask": "Which regions missed their sales target, and by how much?",
+    "command": "npm run metrics -- variance"
+  },
+  {
+    "ask": "Are our dispatch percentages weighted by the number of orders?",
+    "command": "npm run metrics -- scorecard"
+  },
+  {
+    "ask": "Which reported numbers are stale?",
+    "command": "npm run metrics -- attention"
+  },
+  {
+    "ask": "Which metrics have a target but no actual result?",
+    "command": "npm run metrics -- scorecard"
+  },
+  {
+    "ask": "Which actual results have no agreed target?",
+    "command": "npm run metrics -- missing-targets"
+  },
+  {
+    "ask": "Which segment changed most between its observed periods?",
+    "command": "npm run metrics -- trend SALES"
+  },
+  {
+    "ask": "Which source and filter scope produced each metric?",
+    "command": "npm run metrics -- sources"
+  },
+  {
+    "ask": "Which follow-up actions are overdue and who owns them?",
+    "command": "npm run metrics -- actions"
+  },
+  {
+    "ask": "Which personal-information metrics need a purpose or accuracy review?",
+    "command": "npm run metrics -- compliance"
+  },
+  {
+    "ask": "Who changed the target, and what was the previous value?",
+    "command": "npm run metrics -- history SALES"
+  }
+]

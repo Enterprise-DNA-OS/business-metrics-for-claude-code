@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Monthly scorecard",
+    "ask": "Which results missed target, and which are missing?",
+    "command": "node scripts/metrics.mjs scorecard",
+    "output": "  code      name              period      segment     unit     actual      target       variance     status        \n  --------  ----------------  ----------  ----------  -------  ----------  -----------  -----------  --------------\n  BACKLOG   Order backlog     2026-10-01  All         count                20.0000                   missing actual\n  ONTIME    On-time dispatch  2026-10-01  North       percent  89.0909     95.0000      -5.9091      off target    \n  OVERTIME  Overtime hours    2026-07-01  Operations  hours    44.0000                               missing target\n  RETURNS   Customer returns  2026-10-01  North       count    18.0000     12.0000      6.0000       off target    \n  SALES     Net sales         2026-10-01  North       NZD      85000.0000  100000.0000  -15000.0000  off target    \n  SALES     Net sales         2026-10-01  South       NZD      90000.0000  80000.0000   10000.0000   on target"
+  },
+  {
+    "title": "Reporting attention",
+    "ask": "Which figures and follow-ups need attention?",
+    "command": "node scripts/metrics.mjs attention",
+    "output": "  code      name              segment     period      reason                     owner\n  --------  ----------------  ----------  ----------  -------------------------  -----\n  BACKLOG   Order backlog     All         2026-10-01  missing actual             Ben  \n  BACKLOG   Order backlog     All                     no observations            Ben  \n  ONTIME    On-time dispatch  All                     definition review overdue  Ben  \n  ONTIME    On-time dispatch  North       2026-10-01  off target                 Ben  \n  OVERTIME  Overtime hours    All                     definition review overdue  Moana\n  OVERTIME  Overtime hours    Operations  2026-07-01  missing target             Moana\n  OVERTIME  Overtime hours    Operations  2026-07-01  stale period               Moana\n  RETURNS   Customer returns  North       2026-10-01  off target                 Aroha\n  SALES     Net sales         All         2026-11-01  action overdue: ACT-101    Aroha\n  SALES     Net sales         North       2026-10-01  off target                 Aroha"
+  },
+  {
+    "title": "Sales trend",
+    "ask": "How did each region change between the reported months?",
+    "command": "node scripts/metrics.mjs trend SALES",
+    "output": "  code   period      segment  unit  actual       target       previous period  previous actual  change     \n  -----  ----------  -------  ----  -----------  -----------  ---------------  ---------------  -----------\n  SALES  2026-09-01  North    NZD   100000.0000                                                            \n  SALES  2026-10-01  North    NZD   85000.0000   100000.0000  2026-09-01       100000.0000      -15000.0000\n  SALES  2026-09-01  South    NZD   70000.0000                                                             \n  SALES  2026-10-01  South    NZD   90000.0000   80000.0000   2026-09-01       70000.0000       20000.0000"
+  }
+]
